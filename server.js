@@ -63,13 +63,8 @@ app.use('/api/upload', require('./routes/upload'));
 const PORT = process.env.PORT || 3000;
 
 if (process.env.NODE_ENV === 'production') {
-  const options = {
-    key: fs.readFileSync('path/to/private.key'),
-    cert: fs.readFileSync('path/to/certificate.crt'),
-  };
-
-  https.createServer(options, app).listen(PORT, () => {
-    console.log(`Server running on https://localhost:${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 } else {
   app.listen(PORT, () => {
