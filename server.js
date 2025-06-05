@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const port = process.env.PORT || 3000;
 
 const express = require('express');
+app.set('trust proxy', 1);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const signupRoute = require('./routes/signup');
@@ -24,7 +25,6 @@ const uploadRouter = require('./routes/upload');
 const feedRoute = require('./routes/feed'); // Import feed route
 const searchRoutes = require('./routes/search');
 const otpVerificationRoute = require('./routes/otp-verification'); // Add this line
-
 console.log("GMAIL PASS:", process.env.GMAIL_APP_PASSWORD);
 
 app.use(cors({
