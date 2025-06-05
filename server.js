@@ -28,7 +28,7 @@ const otpVerificationRoute = require('./routes/otp-verification'); // Add this l
 console.log("GMAIL PASS:", process.env.GMAIL_APP_PASSWORD);
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Replace with your frontend URL
+  origin: 'https://harmolinkuv3.vercel.app', // Replace with your frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
