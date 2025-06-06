@@ -15,7 +15,7 @@ router.post('/signup', [
   const { username, email, password, recaptchaResponse } = req.body;
 
   // Verify reCAPTCHA
-  const secretKey = '6LeSaTIrAAAAALLD-cSjuLjZqKZnfifJl_RedkF6';
+  const secretKey = '6Ld0dVcrAAAAACta19p-MJ0I3_N9rxAhLq_-2Ete';
   const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
 
   try {
