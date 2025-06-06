@@ -15,14 +15,14 @@ router.post('/signup', [
   const { username, email, password, recaptchaResponse } = req.body;
 
   // Verify reCAPTCHA
-  // const secretKey = '6LeSaTIrAAAAALLD-cSjuLjZqKZnfifJl_RedkF6';
-  // const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
+  const secretKey = '6LeSaTIrAAAAALLD-cSjuLjZqKZnfifJl_RedkF6';
+  const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
 
   try {
-    // const { data } = await axios.post(verificationUrl);
-    // if (!data.success) {
-    //   return res.status(400).json({ message: 'reCAPTCHA verification failed.' });
-    // }
+    const { data } = await axios.post(verificationUrl);
+    if (!data.success) {
+      return res.status(400).json({ message: 'reCAPTCHA verification failed.' });
+    }
 
     // Check if username or email already exists
     const [existingUser] = await db.query(
