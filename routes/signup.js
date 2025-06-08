@@ -6,13 +6,14 @@ const { body, validationResult } = require('express-validator');
 const axios = require('axios');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { getTimeInTimezone } = require('./utils/TimeUtils.js');
 
 router.post('/signup', [
   body('username').trim().escape(),
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 8 }).escape(),
 ], async (req, res) => {
-  const { username, email, password, recaptchaResponse } = req.body;
+  const { username, email, password, recaptchaResponse, timezone } = req.body;
 
   // Verify reCAPTCHA
   const secretKey = '6Ld0dVcrAAAAACta19p-MJ0I3_N9rxAhLq_-2Ete';
@@ -42,7 +43,7 @@ router.post('/signup', [
 
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const otpExpiry = getTimeInTimezone(timezone, 10); // 10 minutes from now
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
