@@ -15,12 +15,24 @@ router.post('/verify-otp', async (req, res) => {
   }
 
   try {
+    // const [user] = await db.query(
+    //   'SELECT * FROM users WHERE email = ? AND otp_code = ?',
+    //   [email, otp]
+    // );
+
+        const [userExists] = await db.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+    console.log('User exists check:', userExists);
+
+    // Then check user with OTP
     const [user] = await db.query(
-      'SELECT * FROM users WHERE email = ? AND otp_code = ?',
+      'SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expiry > NOW()',
       [email, otp]
     );
+    console.log('User with OTP check:', user);
 
-    console.log('User found:', user);
 
     if (user.length === 0) {
       return res.status(400).json({ message: 'Invalid or expired OTP.' });
