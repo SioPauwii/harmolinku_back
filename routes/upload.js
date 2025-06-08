@@ -28,13 +28,13 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
   fileFilter: (req, file, cb) => {
     const allowedExt = ['.jpeg', '.jpg', '.png', '.gif', '.webp'];
-    const allowedMime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedMime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
     const ext = path.extname(file.originalname).toLowerCase();
     const mime = file.mimetype;
     if (allowedExt.includes(ext) && allowedMime.includes(mime)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files (jpeg, jpg, png, gif) are allowed'));
+      cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed'));
     }
   }
 });
