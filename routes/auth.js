@@ -70,7 +70,7 @@ router.post('/forgot-password', async (req, res) => {
       },
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password?token=${resetToken}`;
     const userName = user[0].username || '';
 
     const html = `
