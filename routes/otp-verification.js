@@ -16,7 +16,7 @@ router.post('/verify-otp', async (req, res) => {
 
   try {
     const [user] = await db.query(
-      'SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expiry > NOW()',
+      'SELECT * FROM users WHERE email = ? AND otp_code = ?',
       [email, otp]
     );
 
