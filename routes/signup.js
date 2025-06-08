@@ -6,7 +6,7 @@ const { body, validationResult } = require('express-validator');
 const axios = require('axios');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const getTimeInTimezone = require('./utils/TimeUtils.js');
+const { getTimeInTimezone } = require('./utils/TimeUtils.js');
 
 router.post('/signup', [
   body('username').trim().escape(),
