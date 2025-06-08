@@ -8,6 +8,8 @@ const crypto = require('crypto');
 router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
 
+  console.log('Received OTP verification request:', { email, otp });
+
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required.' });
   }
@@ -17,6 +19,8 @@ router.post('/verify-otp', async (req, res) => {
       'SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expiry > NOW()',
       [email, otp]
     );
+
+    console.log('User found:', user);
 
     if (user.length === 0) {
       return res.status(400).json({ message: 'Invalid or expired OTP.' });
