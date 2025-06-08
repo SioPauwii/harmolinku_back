@@ -1,25 +1,60 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('../config/db'); 
-const authenticateToken = require('../middleware/authenticateToken'); 
-const axios = require('axios');
+const db = require("../config/db");
+const authenticateToken = require("../middleware/authenticateToken");
+const axios = require("axios");
 
-router.post('/pfcustom', async (req, res) => {
-  const { user_id, birthday, gender, bio } = req.body;
+router.post("/pfcustom", async (req, res) => {
+  const { user_id, birthday, gender, bio, profile_image } = req.body;
 
   try {
+    // Process profile_image to ensure it's a valid Cloudinary display URL
+    let processedProfileImage = null;
+    if (profile_image) {
+      // Check if it's a valid Cloudinary URL (matching your upload.js configuration)
+      if (
+        profile_image.includes("res.cloudinary.com") &&
+        profile_image.includes("harmolinku_uploads")
+      ) {
+        // Ensure it's the secure HTTPS URL and properly formatted
+        processedProfileImage = profile_image.startsWith(
+          "https://res.cloudinary.com"
+        )
+          ? profile_image
+          : profile_image.replace(/^.*?(https:\/\/res\.cloudinary\.com)/, "$1");
+
+        // Remove any double URLs
+        processedProfileImage = processedProfileImage.replace(
+          /.*https:\/\/res\.cloudinary\.com/,
+          "https://res.cloudinary.com"
+        );
+      } else {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "Invalid profile image URL. Please upload the image using the upload endpoint first.",
+        });
+      }
+    }
+
     await db.query(
-      'INSERT INTO user_profiles (user_id, birthday, gender, bio) VALUES (?, ?, ?, ?)',
-      [user_id, birthday, gender, bio]
+      "INSERT INTO user_profiles (user_id, birthday, gender, bio, profile_image) VALUES (?, ?, ?, ?, ?)",
+      [user_id, birthday, gender, bio, processedProfileImage]
     );
-    res.status(201).json({ status: 'success', message: 'Profile saved successfully!' });
+    res.status(201).json({
+      status: "success",
+      message: "Profile saved successfully!",
+      profile_image: processedProfileImage,
+    });
   } catch (error) {
-    console.error('Error saving profile:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to save profile.' });
+    console.error("Error saving profile:", error);
+    res
+      .status(500)
+      .json({ status: "error", message: "Failed to save profile." });
   }
 });
 
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get("/profile", authenticateToken, async (req, res) => {
   const user_id = req.user.id;
 
   try {
@@ -38,48 +73,85 @@ router.get('/profile', authenticateToken, async (req, res) => {
       [user_id]
     );
     if (profileRows.length === 0) {
-      return res.status(404).json({ message: 'Profile not found.' });
+      return res.status(404).json({ message: "Profile not found." });
     }
     res.status(200).json({ profile: profileRows[0] });
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ message: "Server error." });
   }
 });
 
-router.post('/complete-onboarding', async (req, res) => {
+router.post("/complete-onboarding", async (req, res) => {
   const { user_id } = req.body;
 
   try {
-    await db.query('UPDATE users SET onboarding_completed = TRUE WHERE id = ?', [user_id]);
-    res.status(200).json({ message: 'Onboarding completed.' });
+    await db.query(
+      "UPDATE users SET onboarding_completed = TRUE WHERE id = ?",
+      [user_id]
+    );
+    res.status(200).json({ message: "Onboarding completed." });
   } catch (error) {
-    console.error('Error completing onboarding:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error("Error completing onboarding:", error);
+    res.status(500).json({ message: "Server error." });
   }
 });
 
 // Update user profile (username, birthday, gender, bio, profile image)
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put("/profile", authenticateToken, async (req, res) => {
   const user_id = req.user.id;
   const { name, gender, bio, profile_image } = req.body;
 
   try {
+    // Process profile_image to ensure it's a valid Cloudinary display URL
+    let processedProfileImage = null;
+    if (profile_image) {
+      // Check if it's a valid Cloudinary URL (matching your upload.js configuration)
+      if (
+        profile_image.includes("res.cloudinary.com") &&
+        profile_image.includes("harmolinku_uploads")
+      ) {
+        // Ensure it's the secure HTTPS URL and properly formatted
+        processedProfileImage = profile_image.startsWith(
+          "https://res.cloudinary.com"
+        )
+          ? profile_image
+          : profile_image.replace(/^.*?(https:\/\/res\.cloudinary\.com)/, "$1");
+
+        // Remove any double URLs (like the issue you mentioned)
+        processedProfileImage = processedProfileImage.replace(
+          /.*https:\/\/res\.cloudinary\.com/,
+          "https://res.cloudinary.com"
+        );
+      } else {
+        return res.status(400).json({
+          message:
+            "Invalid profile image URL. Please upload the image using the upload endpoint first.",
+        });
+      }
+    }
+
     // Update username in users table
-    await db.query('UPDATE users SET username = ? WHERE id = ?', [name, user_id]);
+    await db.query("UPDATE users SET username = ? WHERE id = ?", [
+      name,
+      user_id,
+    ]);
     // Update profile info in user_profiles table (do NOT update birthday)
     await db.query(
-      'UPDATE user_profiles SET gender = ?, bio = ?, profile_image = ? WHERE user_id = ?',
-      [gender, bio, profile_image, user_id]
+      "UPDATE user_profiles SET gender = ?, bio = ?, profile_image = ? WHERE user_id = ?",
+      [gender, bio, processedProfileImage, user_id]
     );
-    res.status(200).json({ message: 'Profile updated successfully.' });
+    res.status(200).json({
+      message: "Profile updated successfully.",
+      profile_image: processedProfileImage,
+    });
   } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ message: 'Failed to update profile.' });
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Failed to update profile." });
   }
 });
 
-router.get('/mixtapes', authenticateToken, async (req, res) => {
+router.get("/mixtapes", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     // Fetch mixtapes for the user
@@ -92,7 +164,7 @@ router.get('/mixtapes', authenticateToken, async (req, res) => {
     );
 
     // Fetch songs for all mixtapes
-    const mixtapeIds = mixtapes.map(m => m.id);
+    const mixtapeIds = mixtapes.map((m) => m.id);
     let songs = [];
     if (mixtapeIds.length > 0) {
       const [songRows] = await db.query(
@@ -105,26 +177,28 @@ router.get('/mixtapes', authenticateToken, async (req, res) => {
     }
 
     // Attach songs to mixtapes
-    const mixtapesWithSongs = mixtapes.map(mix => ({
+    const mixtapesWithSongs = mixtapes.map((mix) => ({
       ...mix,
-      songs: songs.filter(song => song.mixtape_id === mix.id)
+      songs: songs.filter((song) => song.mixtape_id === mix.id),
     }));
 
     res.json(mixtapesWithSongs);
   } catch (error) {
-    console.error('Error fetching mixtapes:', error);
-    res.status(500).json({ message: 'Failed to fetch mixtapes.' });
+    console.error("Error fetching mixtapes:", error);
+    res.status(500).json({ message: "Failed to fetch mixtapes." });
   }
 });
 
-router.post('/mixtapes', authenticateToken, async (req, res) => {
+router.post("/mixtapes", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { name, description, cover, songs } = req.body;
 
-  console.log('Received mixtape:', req.body);
+  console.log("Received mixtape:", req.body);
 
   if (!name || !Array.isArray(songs) || songs.length === 0) {
-    return res.status(400).json({ message: 'Name and at least one song are required.' });
+    return res
+      .status(400)
+      .json({ message: "Name and at least one song are required." });
   }
 
   try {
@@ -146,27 +220,29 @@ router.post('/mixtapes', authenticateToken, async (req, res) => {
           mixtapeId,
           song.name,
           song.artist,
-          song.preview_url || '',
-          song.artwork_url || '',
+          song.preview_url || "",
+          song.artwork_url || "",
         ]
       );
     }
 
-    res.status(201).json({ message: 'Mixtape created successfully.', mixtapeId });
+    res
+      .status(201)
+      .json({ message: "Mixtape created successfully.", mixtapeId });
   } catch (error) {
-    console.error('Error creating mixtape:', error);
-    res.status(500).json({ message: 'Failed to create mixtape.' });
+    console.error("Error creating mixtape:", error);
+    res.status(500).json({ message: "Failed to create mixtape." });
   }
 });
 
-router.put('/mixtapes/:id', authenticateToken, async (req, res) => {
+router.put("/mixtapes/:id", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const mixtapeId = req.params.id;
   let { name, description, cover, songs } = req.body;
 
   try {
     if (!Array.isArray(songs)) {
-      return res.status(400).json({ message: 'Songs must be an array.' });
+      return res.status(400).json({ message: "Songs must be an array." });
     }
 
     // Fetch current photo_url if cover is missing or empty
@@ -181,17 +257,13 @@ router.put('/mixtapes/:id', authenticateToken, async (req, res) => {
     // Update mixtape details
     await db.query(
       `UPDATE mixtapes SET name = ?, bio = ?, photo_url = ? WHERE id = ? AND user_id = ?`,
-      [
-        name ?? null,
-        description ?? null,
-        cover ?? null,
-        mixtapeId,
-        userId
-      ]
+      [name ?? null, description ?? null, cover ?? null, mixtapeId, userId]
     );
 
     // Delete existing songs for the mixtape
-    await db.query(`DELETE FROM mixtape_songs WHERE mixtape_id = ?`, [mixtapeId]);
+    await db.query(`DELETE FROM mixtape_songs WHERE mixtape_id = ?`, [
+      mixtapeId,
+    ]);
 
     // Insert updated songs
     for (const song of songs) {
@@ -202,49 +274,45 @@ router.put('/mixtapes/:id', authenticateToken, async (req, res) => {
       const artworkUrl = song.artwork_url ?? null;
 
       if (!songName || !artistName) {
-        console.error('Invalid song:', song);
+        console.error("Invalid song:", song);
         continue; // Skip invalid songs
       }
 
       await db.query(
         `INSERT INTO mixtape_songs (mixtape_id, song_name, artist_name, preview_url, artwork_url)
          VALUES (?, ?, ?, ?, ?)`,
-        [
-          mixtapeId,
-          songName,
-          artistName,
-          previewUrl,
-          artworkUrl,
-        ]
+        [mixtapeId, songName, artistName, previewUrl, artworkUrl]
       );
     }
 
-    res.status(200).json({ message: 'Mixtape updated successfully.' });
+    res.status(200).json({ message: "Mixtape updated successfully." });
   } catch (error) {
-    console.error('Error updating mixtape:', error);
-    res.status(500).json({ message: 'Failed to update mixtape.', error: error.message });
+    console.error("Error updating mixtape:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update mixtape.", error: error.message });
   }
 });
 
-router.get('/itunes-search', async (req, res) => {
+router.get("/itunes-search", async (req, res) => {
   const { term } = req.query;
-  if (!term) return res.status(400).json({ message: 'Missing search term.' });
+  if (!term) return res.status(400).json({ message: "Missing search term." });
   try {
-    const response = await axios.get('https://itunes.apple.com/search', {
+    const response = await axios.get("https://itunes.apple.com/search", {
       params: {
         term,
-        media: 'music',
+        media: "music",
         limit: 10,
       },
     });
     res.json(response.data);
   } catch (error) {
-    res.status(500).json({ message: 'iTunes search failed.' });
+    res.status(500).json({ message: "iTunes search failed." });
   }
 });
 
 // Add this after your other routes
-router.get('/polls', authenticateToken, async (req, res) => {
+router.get("/polls", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   try {
     // Fetch polls created by the user
@@ -254,7 +322,7 @@ router.get('/polls', authenticateToken, async (req, res) => {
     );
 
     // Fetch options for these polls
-    const pollIds = polls.map(p => p.id);
+    const pollIds = polls.map((p) => p.id);
     let options = [];
     if (pollIds.length > 0) {
       const [optionRows] = await db.query(
@@ -270,42 +338,44 @@ router.get('/polls', authenticateToken, async (req, res) => {
     }
 
     // Attach options to polls, format like feed.js
-    const pollsWithOptions = polls.map(poll => ({
+    const pollsWithOptions = polls.map((poll) => ({
       ...poll,
       options: options
-        .filter(opt => opt.poll_id === poll.id)
-        .map(opt => ({
+        .filter((opt) => opt.poll_id === poll.id)
+        .map((opt) => ({
           id: opt.id,
           text: opt.option_text,
-          votes: Number(opt.votes)
-        }))
+          votes: Number(opt.votes),
+        })),
     }));
 
     res.json(pollsWithOptions);
   } catch (error) {
-    console.error('Error fetching polls:', error);
-    res.status(500).json({ message: 'Failed to fetch polls.' });
+    console.error("Error fetching polls:", error);
+    res.status(500).json({ message: "Failed to fetch polls." });
   }
 });
 
 // Add DELETE endpoint for polls
-router.delete('/polls/:id', authenticateToken, async (req, res) => {
+router.delete("/polls/:id", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const pollId = req.params.id;
 
   try {
     // First verify the poll belongs to the user
     const [pollRows] = await db.query(
-      'SELECT id FROM polls WHERE id = ? AND user_id = ?',
+      "SELECT id FROM polls WHERE id = ? AND user_id = ?",
       [pollId, userId]
     );
 
     if (pollRows.length === 0) {
-      return res.status(404).json({ message: 'Poll not found or unauthorized.' });
+      return res
+        .status(404)
+        .json({ message: "Poll not found or unauthorized." });
     }
 
     // Start a transaction to ensure all related data is deleted
-    await db.query('START TRANSACTION');
+    await db.query("START TRANSACTION");
 
     try {
       // Delete votes first (due to foreign key constraints)
@@ -316,24 +386,24 @@ router.delete('/polls/:id', authenticateToken, async (req, res) => {
       );
 
       // Delete poll options
-      await db.query('DELETE FROM poll_options WHERE poll_id = ?', [pollId]);
+      await db.query("DELETE FROM poll_options WHERE poll_id = ?", [pollId]);
 
       // Finally delete the poll itself
-      await db.query('DELETE FROM polls WHERE id = ?', [pollId]);
+      await db.query("DELETE FROM polls WHERE id = ?", [pollId]);
 
       // Commit the transaction
-      await db.query('COMMIT');
+      await db.query("COMMIT");
 
-      res.json({ message: 'Poll deleted successfully.' });
+      res.json({ message: "Poll deleted successfully." });
     } catch (error) {
       // If anything fails, roll back the transaction
-      await db.query('ROLLBACK');
+      await db.query("ROLLBACK");
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting poll:', error);
-    res.status(500).json({ message: 'Failed to delete poll.' });
+    console.error("Error deleting poll:", error);
+    res.status(500).json({ message: "Failed to delete poll." });
   }
 });
-      
+
 module.exports = router;
