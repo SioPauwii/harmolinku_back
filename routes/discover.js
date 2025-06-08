@@ -109,6 +109,7 @@ router.get("/discover", authenticateToken, async (req, res) => {
         age,
         user_id: profile.user_id,
         mixtapes,
+        photo_url: profile.photo_url,
       };
     });
 
