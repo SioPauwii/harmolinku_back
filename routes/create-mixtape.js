@@ -26,10 +26,30 @@ router.post("/create-mixtape", authenticateToken, async (req, res) => {
       .json({ message: "Mixtape name and at least one song are required." });
   }
 
+  // Process photoUrl to ensure it's a valid Cloudinary display URL
+  let processedPhotoUrl = null;
+  if (photoUrl) {
+    // Check if it's a Cloudinary URL (matching your upload.js configuration)
+    if (
+      photoUrl.includes("res.cloudinary.com") &&
+      photoUrl.includes("harmolinku_uploads")
+    ) {
+      // Ensure it's the secure HTTPS URL (which your upload.js already provides)
+      processedPhotoUrl = photoUrl.startsWith("https://")
+        ? photoUrl
+        : photoUrl.replace("http://", "https://");
+    } else {
+      return res.status(400).json({
+        message:
+          "Invalid photo URL. Please upload the image using the upload endpoint first.",
+      });
+    }
+  }
+
   try {
     const [result] = await db.execute(
       "INSERT INTO mixtapes (user_id, name, bio, photo_url, source) VALUES (?, ?, ?, ?, ?)",
-      [req.user.id, name, description, photoUrl, "sidebar"]
+      [req.user.id, name, description, processedPhotoUrl, "sidebar"]
     );
     const mixtapeId = result.insertId;
 
@@ -41,7 +61,10 @@ router.post("/create-mixtape", authenticateToken, async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: "Mixtape created successfully." });
+    res.status(201).json({
+      message: "Mixtape created successfully.",
+      photoUrl: processedPhotoUrl,
+    });
   } catch (error) {
     console.error("Error creating mixtape:", error);
     res.status(500).json({ message: "Failed to create mixtape." });
@@ -144,7 +167,7 @@ router.put("/mixtapes/:id", authenticateToken, async (req, res) => {
 
     // Handle photo URL logic
     let finalPhotoUrl = currentMixtape.photo_url; // Default to current photo
-    
+
     // Update photo URL if a new one is provided
     if (photoUrl) {
       finalPhotoUrl = photoUrl;
@@ -175,9 +198,9 @@ router.put("/mixtapes/:id", authenticateToken, async (req, res) => {
       );
     }
 
-    res.json({ 
+    res.json({
       message: "Mixtape updated successfully.",
-      photoUrl: finalPhotoUrl // Send back the final photo URL
+      photoUrl: finalPhotoUrl, // Send back the final photo URL
     });
   } catch (error) {
     console.error("Error updating mixtape:", error);
