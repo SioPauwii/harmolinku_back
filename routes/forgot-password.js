@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
       },
     });    
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password?token=${resetToken}`;
     await transporter.sendMail({
       from: '"Test" <harmonilinkweb@gmail.com>',
       to: email,
